@@ -5,6 +5,7 @@ gcc_flags="-Wall -Wextra -std=c99 -pedantic"
 clang_flags="-Weverything -Wno-declaration-after-statement -Wno-vla -std=c99 -pedantic"
 debug_flags="-g"
 op_flags="-O2"
+common_flags="-pthread"
 
 source_files=(
     "main.c"
@@ -46,6 +47,8 @@ case "$cc" in
         comp_cmd="$cc"
     ;;
 esac
+
+comp_cmd+=" $common_flags"
 
 if [ "$debug" == "true" ]; then
     comp_cmd+=" $debug_flags"
