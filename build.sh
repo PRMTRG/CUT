@@ -16,6 +16,7 @@ source_files=(
 
 debug=false
 tests=false
+print=false
 
 for arg in "$@"; do
     case "$arg" in
@@ -24,6 +25,9 @@ for arg in "$@"; do
         ;;
         "--tests")
             tests=true
+        ;;
+        "--print")
+            print=true
         ;;
         *)
             echo "Unrecognized option: $arg"
@@ -58,4 +62,8 @@ else
     comp_cmd+=" $op_flags"
 fi
 
-$comp_cmd -o cut "${source_files[@]}"
+if [ "$print" == "true" ]; then
+    echo $comp_cmd -o cut "${source_files[@]}"
+else
+    $comp_cmd -o cut "${source_files[@]}"
+fi
