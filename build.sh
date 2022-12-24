@@ -8,6 +8,7 @@ op_flags="-O2"
 
 source_files=(
     "main.c"
+    "proc_stat_utils.c"
 )
 
 debug=false
