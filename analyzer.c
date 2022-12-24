@@ -25,8 +25,9 @@ static ProcStatCpuEntry *cpu_entries_arr[2];
 static int n_cpu_entries_arr[2];
 static int cpu_entries_next_index;
 
-static float *cpu_usage;
 static int n_cpu_usage;
+static float *cpu_usage;
+static char (*cpu_names)[PROCSTATCPUENTRY_CPU_NAME_SIZE];
 
 static void
 cleanup_mutex_unlock(void *mutex)
@@ -82,8 +83,12 @@ process_data(void)
 
     n_cpu_usage = n_cpu_entries_arr[0];
 
+    for (int i = 0; i < n_cpu_usage; i++) {
+        memcpy(cpu_names[i], current[i].cpu_name, PROCSTATCPUENTRY_CPU_NAME_SIZE);
+    }
+
     // TODO: move printing to Printer thread (not yet added)
-    print_cpu_usage(n_cpu_usage, current, cpu_usage);
+    print_cpu_usage(n_cpu_usage, cpu_names, cpu_usage);
 }
 
 void *
@@ -112,6 +117,9 @@ analyzer_run(void *arg)
     cpu_usage = emalloc((size_t)max_cpu_entries * sizeof(cpu_usage[0]));
     pthread_cleanup_push(free, cpu_usage);
 
+    cpu_names = emalloc((size_t)max_cpu_entries * sizeof(cpu_names[0]));
+    pthread_cleanup_push(free, cpu_names);
+
     analyzer_initialized = true;
 
     iret = pthread_mutex_unlock(&analyzer_lock);
@@ -129,6 +137,7 @@ analyzer_run(void *arg)
         // TODO: signal to watchdog
     }
 
+    pthread_cleanup_pop(1);
     pthread_cleanup_pop(1);
     pthread_cleanup_pop(1);
     pthread_cleanup_pop(1);

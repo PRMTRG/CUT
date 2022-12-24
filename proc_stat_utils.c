@@ -80,7 +80,7 @@ calculate_cpu_usage(int n_cpu_entries, ProcStatCpuEntry previous_stats[n_cpu_ent
 }
 
 void
-print_cpu_usage(int n_cpu_entries, ProcStatCpuEntry cpu_entries[n_cpu_entries], float cpu_usage[n_cpu_entries])
+print_cpu_usage(int n_cpu_entries, char cpu_names[n_cpu_entries][PROCSTATCPUENTRY_CPU_NAME_SIZE], float cpu_usage[n_cpu_entries])
 {
     if (n_cpu_entries < 2) {
         return;
@@ -94,7 +94,7 @@ print_cpu_usage(int n_cpu_entries, ProcStatCpuEntry cpu_entries[n_cpu_entries], 
     int n_cols = 3;
     int col_cnt = 0;
     for (int i = 1; i < n_cpu_entries; i++, col_cnt++) {
-        printf("%s\t%05.2f%%", cpu_entries[i].cpu_name, (double)cpu_usage[i]);
+        printf("%s\t%05.2f%%", cpu_names[i], (double)cpu_usage[i]);
         (col_cnt + 1) % n_cols == 0 ? printf("\n") : printf("\t\t");
     }
     if ((col_cnt + 1) % n_cols == 0) {
