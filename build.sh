@@ -10,6 +10,8 @@ common_flags="-pthread"
 source_files=(
     "main.c"
     "proc_stat_utils.c"
+    "reader.c"
+    "analyzer.c"
 )
 
 debug=false
