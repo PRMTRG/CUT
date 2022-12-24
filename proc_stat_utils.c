@@ -88,7 +88,7 @@ print_cpu_usage(int n_cpu_entries, float cpu_usage[n_cpu_entries])
     /* Clear the terminal */
     printf("\033[H\033[J");
 
-    printf("Avg.\t%05.2f%%\n", cpu_usage[0]);
+    printf("Avg.\t%05.2f%%\n", (double)cpu_usage[0]);
 
     int n_cols = 3;
     for (int i = 1, col_cnt = 0; i < n_cpu_entries; i++, col_cnt++) {
