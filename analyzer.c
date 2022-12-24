@@ -38,7 +38,7 @@ cleanup_mutex_unlock(void *mutex)
 static bool
 retrieve_submitted_data(void)
 {
-    bool succ = false;
+    bool succ;
 
     int iret = pthread_mutex_lock(&analyzer_lock);
     assert(iret == 0);
@@ -49,7 +49,9 @@ retrieve_submitted_data(void)
         pthread_cond_wait(&cond_on_data_submitted, &analyzer_lock);
     }
 
-    if (new_data_submitted) {
+    if (!new_data_submitted) {
+        succ = false;
+    } else {
         succ = true;
 
         new_data_submitted = false;
