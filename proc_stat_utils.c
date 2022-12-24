@@ -22,10 +22,11 @@ read_and_parse_proc_stat_file(FILE proc_stat_file[static 1], int max_cpu_entries
 
         ProcStatCpuEntry *ce = &cpu_entries[n_cpu_entries];
 
-        int ret = sscanf(buf, "%*s %lu %lu %lu %lu %lu %lu %lu %lu %lu %lu",
-                &ce->user, &ce->nice, &ce->system, &ce->idle, &ce->iowait,
+        int ret = sscanf(buf, PROCSTATCPUENTRY_CPU_NAME_SCANF_FORMAT_SPECIFIER " "
+                "%lu %lu %lu %lu %lu %lu %lu %lu %lu %lu",
+                ce->cpu_name, &ce->user, &ce->nice, &ce->system, &ce->idle, &ce->iowait,
                 &ce->irq, &ce->softirq, &ce->steal, &ce->guest, &ce->guest_nice);
-        if (ret != 10) {
+        if (ret != 11) {
             eprint("Parsing CPU entry failed");
             return -1;
         }
@@ -72,14 +73,14 @@ calculate_cpu_usage(int n_cpu_entries, ProcStatCpuEntry previous_stats[n_cpu_ent
             return false;
         }
 
-        cpu_usage[i] = (float)(total_d - idle_d) / total_d * 100;
+        cpu_usage[i] = (float)(total_d - idle_d) / (float)total_d * 100;
     }
 
     return true;
 }
 
 void
-print_cpu_usage(int n_cpu_entries, float cpu_usage[n_cpu_entries])
+print_cpu_usage(int n_cpu_entries, ProcStatCpuEntry cpu_entries[n_cpu_entries], float cpu_usage[n_cpu_entries])
 {
     if (n_cpu_entries < 2) {
         return;
@@ -91,8 +92,12 @@ print_cpu_usage(int n_cpu_entries, float cpu_usage[n_cpu_entries])
     printf("Avg.\t%05.2f%%\n", (double)cpu_usage[0]);
 
     int n_cols = 3;
-    for (int i = 1, col_cnt = 0; i < n_cpu_entries; i++, col_cnt++) {
-        printf("Cpu%02d\t%05.2f%%", i - 1, cpu_usage[i]);
+    int col_cnt = 0;
+    for (int i = 1; i < n_cpu_entries; i++, col_cnt++) {
+        printf("%s\t%05.2f%%", cpu_entries[i].cpu_name, (double)cpu_usage[i]);
         (col_cnt + 1) % n_cols == 0 ? printf("\n") : printf("\t\t");
+    }
+    if ((col_cnt + 1) % n_cols == 0) {
+        printf("\n");
     }
 }

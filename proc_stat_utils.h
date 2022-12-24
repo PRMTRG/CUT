@@ -5,6 +5,8 @@
 #include <stdbool.h>
 
 typedef struct {
+    char cpu_name[16];
+#define PROCSTATCPUENTRY_CPU_NAME_SCANF_FORMAT_SPECIFIER "%15s"
     unsigned long user;
     unsigned long nice;
     unsigned long system;
@@ -52,9 +54,9 @@ int read_and_parse_proc_stat_file(FILE proc_stat_file[static 1], int max_cpu_ent
 bool calculate_cpu_usage(int n_cpu_entries, ProcStatCpuEntry previous_stats[n_cpu_entries], ProcStatCpuEntry current_stats[n_cpu_entries], float cpu_usage[n_cpu_entries]);
 
 /*
- * Print CPU usage stored in the cpu_usage array.
+ * Print CPU usage stored in the cpu_usage array with cpu names taken from the cpu_entries array.
  * If n is less than 2 the function doesn't do anything.
  */
-void print_cpu_usage(int n, float cpu_usage[n]);
+void print_cpu_usage(int n_cpu_entries, ProcStatCpuEntry cpu_entries[n_cpu_entries], float cpu_usage[n_cpu_entries]);
 
 #endif /* PROC_STAT_UTILS_H */
