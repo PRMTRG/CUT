@@ -6,6 +6,7 @@
 #include "printer.h"
 #include "utils.h"
 #include "proc_stat_utils.h"
+#include "thread_utils.h"
 
 static pthread_mutex_t printer_lock = PTHREAD_MUTEX_INITIALIZER;
 
@@ -19,13 +20,6 @@ static int n_submitted_cpu_entries;
 static char (*submitted_cpu_names)[PROCSTATCPUENTRY_CPU_NAME_SIZE];
 static float *submitted_cpu_usage;
 static bool new_data_submitted;
-
-static void
-cleanup_mutex_unlock(void *mutex)
-{
-    int iret = pthread_mutex_unlock(mutex);
-    assert(iret == 0);
-}
 
 static void
 print_usage(void)
@@ -90,9 +84,7 @@ printer_submit_data(int n_cpu_entries, char cpu_names[n_cpu_entries][PROCSTATCPU
     assert(iret == 0);
     pthread_cleanup_push(cleanup_mutex_unlock, &printer_lock);
 
-    while (!printer_initialized) {
-        pthread_cond_wait(&cond_on_printer_initialized, &printer_lock);
-    }
+    ensure_initialized(&printer_initialized, &cond_on_printer_initialized, &printer_lock);
 
     if (n_cpu_entries > max_cpu_entries) {
         eprint("Exceeded max_cpu_entries");

@@ -9,6 +9,7 @@
 #include "utils.h"
 #include "proc_stat_utils.h"
 #include "printer.h"
+#include "thread_utils.h"
 
 static pthread_mutex_t analyzer_lock = PTHREAD_MUTEX_INITIALIZER;
 
@@ -29,13 +30,6 @@ static int cpu_entries_next_index;
 static int n_cpu_usage;
 static float *cpu_usage;
 static char (*cpu_names)[PROCSTATCPUENTRY_CPU_NAME_SIZE];
-
-static void
-cleanup_mutex_unlock(void *mutex)
-{
-    int iret = pthread_mutex_unlock(mutex);
-    assert(iret == 0);
-}
 
 static bool
 retrieve_submitted_data(void)
@@ -151,9 +145,7 @@ analyzer_submit_data(int n_cpu_entries, ProcStatCpuEntry cpu_entries[n_cpu_entri
     assert(iret == 0);
     pthread_cleanup_push(cleanup_mutex_unlock, &analyzer_lock);
 
-    while (!analyzer_initialized) {
-        pthread_cond_wait(&cond_on_analyzer_initialized, &analyzer_lock);
-    }
+    ensure_initialized(&analyzer_initialized, &cond_on_analyzer_initialized, &analyzer_lock);
 
     if (n_cpu_entries > max_cpu_entries) {
         succ = false;

@@ -8,13 +8,7 @@
 #include "analyzer.h"
 #include "utils.h"
 #include "proc_stat_utils.h"
-
-static void
-cleanup_fclose(void *file)
-{
-    int iret = fclose(file);
-    assert(iret == 0);
-}
+#include "thread_utils.h"
 
 void *
 reader_run(void *arg)

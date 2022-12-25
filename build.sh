@@ -13,6 +13,7 @@ source_files=(
     "reader.c"
     "analyzer.c"
     "printer.c"
+    "thread_utils.c"
 )
 
 debug=false
