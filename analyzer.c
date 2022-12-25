@@ -8,6 +8,7 @@
 #include "analyzer.h"
 #include "utils.h"
 #include "proc_stat_utils.h"
+#include "printer.h"
 
 static pthread_mutex_t analyzer_lock = PTHREAD_MUTEX_INITIALIZER;
 
@@ -87,8 +88,7 @@ process_data(void)
         memcpy(cpu_names[i], current[i].cpu_name, sizeof(current[0].cpu_name));
     }
 
-    // TODO: move printing to Printer thread (not yet added)
-    print_cpu_usage(n_cpu_usage, cpu_names, cpu_usage);
+    printer_submit_data(n_cpu_usage, cpu_names, cpu_usage);
 }
 
 void *
