@@ -12,6 +12,7 @@ source_files=(
     "proc_stat_utils.c"
     "reader.c"
     "analyzer.c"
+    "printer.c"
 )
 
 debug=false
