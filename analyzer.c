@@ -84,7 +84,7 @@ process_data(void)
     n_cpu_usage = n_cpu_entries_arr[0];
 
     for (int i = 0; i < n_cpu_usage; i++) {
-        memcpy(cpu_names[i], current[i].cpu_name, PROCSTATCPUENTRY_CPU_NAME_SIZE);
+        memcpy(cpu_names[i], current[i].cpu_name, sizeof(current[0].cpu_name));
     }
 
     // TODO: move printing to Printer thread (not yet added)
