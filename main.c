@@ -12,6 +12,7 @@
 #include "proc_stat_utils.h"
 #include "reader.h"
 #include "analyzer.h"
+#include "printer.h"
 
 int
 main(int argc, char **argv)
@@ -31,12 +32,16 @@ main(int argc, char **argv)
 
     pthread_t reader;
     pthread_t analyzer;
+    pthread_t printer;
 
     ReaderArgs *reader_args = ecalloc(1, sizeof(*reader_args));
     reader_args->max_cpu_entries = max_cpu_entries;
 
     AnalyzerArgs *analyzer_args = ecalloc(1, sizeof(*analyzer_args));
     analyzer_args->max_cpu_entries = max_cpu_entries;
+
+    PrinterArgs *printer_args = ecalloc(1, sizeof(*printer_args));
+    printer_args->max_cpu_entries = max_cpu_entries;
 
     int iret;
 
@@ -46,12 +51,7 @@ main(int argc, char **argv)
     iret = pthread_create(&analyzer, NULL, analyzer_run, analyzer_args);
     assert(iret == 0);
 
-
-    sleep(15);
-
-    iret = pthread_cancel(reader);
-    assert(iret == 0);
-    iret = pthread_cancel(analyzer);
+    iret = pthread_create(&printer, NULL, printer_run, printer_args);
     assert(iret == 0);
 
 
@@ -59,6 +59,9 @@ main(int argc, char **argv)
     assert(iret == 0);
 
     iret = pthread_join(analyzer, NULL);
+    assert(iret == 0);
+
+    iret = pthread_join(printer, NULL);
     assert(iret == 0);
 
 
