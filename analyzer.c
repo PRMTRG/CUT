@@ -99,9 +99,6 @@ analyzer_run(void *arg)
     int iret = pthread_mutex_lock(&analyzer_lock);
     assert(iret == 0);
 
-    iret = pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, NULL);
-    assert(iret == 0);
-
     AnalyzerArgs *args = arg;
 
     max_cpu_entries = args->max_cpu_entries;
@@ -121,12 +118,9 @@ analyzer_run(void *arg)
     pthread_cleanup_push(free, cpu_names);
 
     analyzer_initialized = true;
-
     iret = pthread_mutex_unlock(&analyzer_lock);
     assert(iret == 0);
 
-    iret = pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
-    assert(iret == 0);
 
     while (1) {
         bool did_retrieve_data = retrieve_submitted_data();
@@ -159,9 +153,6 @@ analyzer_submit_data(int n_cpu_entries, ProcStatCpuEntry cpu_entries[n_cpu_entri
         pthread_cond_wait(&cond_on_analyzer_initialized, &analyzer_lock);
     }
 
-    iret = pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, NULL);
-    assert(iret == 0);
-
     if (n_cpu_entries > max_cpu_entries) {
         succ = false;
     } else {
@@ -173,8 +164,6 @@ analyzer_submit_data(int n_cpu_entries, ProcStatCpuEntry cpu_entries[n_cpu_entri
         pthread_cond_signal(&cond_on_data_submitted);
     }
 
-    iret = pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
-    assert(iret == 0);
     pthread_cleanup_pop(1);
     return succ;
 }
