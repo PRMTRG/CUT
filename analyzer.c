@@ -118,9 +118,11 @@ analyzer_run(void *arg)
     pthread_cleanup_push(free, cpu_names);
 
     analyzer_initialized = true;
-    iret = pthread_mutex_unlock(&analyzer_lock);
+    iret = pthread_cond_signal(&cond_on_analyzer_initialized);
     assert(iret == 0);
 
+    iret = pthread_mutex_unlock(&analyzer_lock);
+    assert(iret == 0);
 
     while (1) {
         bool did_retrieve_data = retrieve_submitted_data();
