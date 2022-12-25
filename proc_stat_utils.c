@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <string.h>
+#include <tgmath.h>
 
 #include "proc_stat_utils.h"
 #include "utils.h"
@@ -79,6 +80,22 @@ calculate_cpu_usage(int n_cpu_entries, ProcStatCpuEntry previous_stats[n_cpu_ent
     return true;
 }
 
+static void
+print_usage_bar(float percentage)
+{
+    percentage /= 5;
+    int n_filled = (int)lroundf(percentage);
+
+    printf("[");
+    for (int i = 0; i < n_filled; i++) {
+        printf("|");
+    }
+    for (int i = n_filled; i < 20; i++) {
+        printf(" ");
+    }
+    printf("]");
+}
+
 void
 print_cpu_usage(int n_cpu_entries, char cpu_names[n_cpu_entries][PROCSTATCPUENTRY_CPU_NAME_SIZE], float cpu_usage[n_cpu_entries])
 {
@@ -89,12 +106,16 @@ print_cpu_usage(int n_cpu_entries, char cpu_names[n_cpu_entries][PROCSTATCPUENTR
     /* Clear the terminal */
     printf("\033[H\033[J");
 
-    printf("Avg.\t%05.2f%%\n", (double)cpu_usage[0]);
+    printf("Avg.\t");
+    print_usage_bar(cpu_usage[0]);
+    printf(" %5.1f%%\n", (double)cpu_usage[0]);
 
-    int n_cols = 3;
+    int n_cols = 2;
     int col_cnt = 0;
     for (int i = 1; i < n_cpu_entries; i++, col_cnt++) {
-        printf("%s\t%05.2f%%", cpu_names[i], (double)cpu_usage[i]);
+        printf("%s\t", cpu_names[i]);
+        print_usage_bar(cpu_usage[i]);
+        printf(" %5.1f%%", (double)cpu_usage[i]);
         (col_cnt + 1) % n_cols == 0 ? printf("\n") : printf("\t\t");
     }
     if ((col_cnt + 1) % n_cols == 0) {

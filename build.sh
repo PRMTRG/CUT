@@ -5,7 +5,7 @@ gcc_flags="-Wall -Wextra -std=c99 -pedantic"
 clang_flags="-Weverything -Wno-declaration-after-statement -Wno-vla -Wno-extra-semi-stmt -std=c99 -pedantic"
 debug_flags="-g"
 op_flags="-O2"
-common_flags="-pthread"
+common_flags="-pthread -lm"
 
 source_files=(
     "main.c"
