@@ -9,6 +9,7 @@
 #include "utils.h"
 #include "proc_stat_utils.h"
 #include "thread_utils.h"
+#include "logger.h"
 
 void *
 reader_run(void *arg)
@@ -20,8 +21,8 @@ reader_run(void *arg)
 
     FILE *proc_stat_file = fopen("/proc/stat", "r");
     if (!proc_stat_file) {
-        eprint("Failed to open /proc/stat");
-        exit(EXIT_FAILURE);
+        elog("Failed to open /proc/stat");
+        pthread_exit(NULL);
     }
     pthread_cleanup_push(cleanup_fclose, proc_stat_file);
 
