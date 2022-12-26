@@ -6,6 +6,7 @@ void * logger_run(void *arg);
 /*
  * Submit a message to be written to the log file.
  * message must be a valid pointer to a null-terminated C string.
+ * A newline character is appended to the logged message.
  * If the message queue is full this function will block until the message can be submitted.
  */
 void logger_log_message(const char *message);
