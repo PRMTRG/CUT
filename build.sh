@@ -14,6 +14,7 @@ source_files=(
     "analyzer.c"
     "printer.c"
     "thread_utils.c"
+    "logger.c"
 )
 
 debug=false
