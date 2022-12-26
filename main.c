@@ -13,6 +13,7 @@
 #include "reader.h"
 #include "analyzer.h"
 #include "printer.h"
+#include "logger.h"
 
 int
 main(int argc, char **argv)
@@ -33,6 +34,7 @@ main(int argc, char **argv)
     pthread_t reader;
     pthread_t analyzer;
     pthread_t printer;
+    pthread_t logger;
 
     ReaderArgs *reader_args = ecalloc(1, sizeof(*reader_args));
     reader_args->max_cpu_entries = max_cpu_entries;
@@ -54,6 +56,8 @@ main(int argc, char **argv)
     iret = pthread_create(&printer, NULL, printer_run, printer_args);
     assert(iret == 0);
 
+    iret = pthread_create(&logger, NULL, logger_run, NULL);
+    assert(iret == 0);
 
     iret = pthread_join(reader, NULL);
     assert(iret == 0);
@@ -64,6 +68,8 @@ main(int argc, char **argv)
     iret = pthread_join(printer, NULL);
     assert(iret == 0);
 
+    iret = pthread_join(logger, NULL);
+    assert(iret == 0);
 
     pthread_exit(NULL);
 }
