@@ -31,7 +31,9 @@ printer_print_usage(void)
 
     if (!shared.new_data_submitted) {
         // TODO: Make this a timed wait
-        pthread_cond_wait(&cond_on_data_submitted, &printer_lock);
+        iret = pthread_cond_wait(&cond_on_data_submitted, &printer_lock);
+        assert(iret != EINVAL);
+        assert(iret != EPERM);
     }
 
     if (shared.new_data_submitted) {

@@ -45,7 +45,9 @@ analyzer_retrieve_submitted_data(AnalyzerPrivateState *priv)
 
     if (!shared.new_data_submitted) {
         // TODO: make this a timed wait
-        pthread_cond_wait(&cond_on_data_submitted, &analyzer_lock);
+        iret = pthread_cond_wait(&cond_on_data_submitted, &analyzer_lock);
+        assert(iret != EINVAL);
+        assert(iret != EPERM);
     }
 
     if (!shared.new_data_submitted) {
