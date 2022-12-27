@@ -1,6 +1,7 @@
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <stdbool.h>
 #include <unistd.h>
 #include <time.h>
@@ -13,48 +14,64 @@
 #include "thread_utils.h"
 #include "logger.h"
 
-static bool first_sleep_done;
+typedef struct {
+    ReaderArgs args;
+    FILE *proc_stat_file;
+    bool first_sleep_done;
+    ProcStatCpuEntry *cpu_entries;
+} ReaderPrivateState;
 
 static void
-deinit(void *arg)
+reader_deinit(void *arg)
 {
-    (void)(arg);
+    ReaderPrivateState *private_state = arg;
 
-    first_sleep_done = false;
+    if (private_state->proc_stat_file) {
+        int iret = fclose(private_state->proc_stat_file);
+        assert(iret == 0);
+    }
+
+    free(private_state->cpu_entries);
+
+    free(private_state);
 }
 
-void *
-reader_run(void *arg)
+static ReaderPrivateState *
+reader_init(void *arg)
 {
-    pthread_cleanup_push(free, arg);
+    ReaderPrivateState *private_state = ecalloc(1, sizeof(*private_state));
 
-    ReaderArgs *reader_args = arg;
-    const int max_cpu_entries = reader_args->max_cpu_entries;
+    memcpy(&private_state->args, arg, sizeof(private_state->args));
+    free(arg);
 
-    FILE *proc_stat_file = fopen("/proc/stat", "r");
-    if (!proc_stat_file) {
+    private_state->proc_stat_file = fopen("/proc/stat", "r");
+    if (!private_state->proc_stat_file) {
         elog("Failed to open /proc/stat");
+        reader_deinit(private_state);
         pthread_exit(NULL);
     }
-    pthread_cleanup_push(cleanup_fclose, proc_stat_file);
 
-    ProcStatCpuEntry *cpu_entries = emalloc((size_t)max_cpu_entries * sizeof(cpu_entries[0]));
-    pthread_cleanup_push(free, cpu_entries);
+    private_state->cpu_entries = emalloc((size_t)private_state->args.max_cpu_entries * sizeof(private_state->cpu_entries[0]));
 
-    pthread_cleanup_push(deinit, NULL);
+    return private_state;
+}
 
+static void
+reader_loop(ReaderPrivateState *private_state)
+{
     while (1) {
-        int n_cpu_entries = read_and_parse_proc_stat_file(proc_stat_file, max_cpu_entries, cpu_entries);
+        int n_cpu_entries = read_and_parse_proc_stat_file(private_state->proc_stat_file,
+                private_state->args.max_cpu_entries, private_state->cpu_entries);
         assert(n_cpu_entries > 1);
 
-        bool bret = analyzer_submit_data(n_cpu_entries, cpu_entries);
+        bool bret = analyzer_submit_data(n_cpu_entries, private_state->cpu_entries);
         assert(bret);
 
         /* TODO: signal to watchdog */
 
         /* Reduce the duration of the first sleep to reduce program startup time */
-        if (!first_sleep_done) {
-            first_sleep_done = true;
+        if (!private_state->first_sleep_done) {
+            private_state->first_sleep_done = true;
 
             struct timespec ts = {0};
             /* 100 miliseconds */
@@ -67,10 +84,18 @@ reader_run(void *arg)
             nanosleep(&ts, NULL);
         }
     }
+}
+
+void *
+reader_run(void *arg)
+{
+    ReaderPrivateState *private_state = reader_init(arg);
+
+    pthread_cleanup_push(reader_deinit, private_state);
+
+    reader_loop(private_state);
 
     pthread_cleanup_pop(1);
-    pthread_cleanup_pop(1);
-    pthread_cleanup_pop(1);
-    pthread_cleanup_pop(1);
+
     pthread_exit(NULL);
 }
