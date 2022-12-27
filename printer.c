@@ -11,11 +11,11 @@
 static struct {
     bool printer_initialized;
     int max_cpu_entries;
-    int n_submitted_cpu_entries;
-    char (*submitted_cpu_names)[PROCSTATCPUENTRY_CPU_NAME_SIZE];
-    double *submitted_cpu_usage;
+    int n_cpu_entries;
+    char (*cpu_names)[PROCSTATCPUENTRY_CPU_NAME_SIZE];
+    double *cpu_usage;
     bool new_data_submitted;
-} shared_state;
+} shared;
 
 static pthread_mutex_t printer_lock = PTHREAD_MUTEX_INITIALIZER;
 
@@ -29,14 +29,14 @@ printer_print_usage(void)
     assert(iret == 0);
     pthread_cleanup_push(cleanup_mutex_unlock, &printer_lock);
 
-    if (!shared_state.new_data_submitted) {
+    if (!shared.new_data_submitted) {
         // TODO: Make this a timed wait
         pthread_cond_wait(&cond_on_data_submitted, &printer_lock);
     }
 
-    if (shared_state.new_data_submitted) {
-        shared_state.new_data_submitted = false;
-        print_cpu_usage(shared_state.n_submitted_cpu_entries, shared_state.submitted_cpu_names, shared_state.submitted_cpu_usage);
+    if (shared.new_data_submitted) {
+        shared.new_data_submitted = false;
+        print_cpu_usage(shared.n_cpu_entries, shared.cpu_names, shared.cpu_usage);
     }
 
     pthread_cleanup_pop(1);
@@ -50,10 +50,10 @@ printer_deinit(void *arg)
     int iret = pthread_mutex_lock(&printer_lock);
     assert(iret == 0);
 
-    free(shared_state.submitted_cpu_names);
-    free(shared_state.submitted_cpu_usage);
+    free(shared.cpu_names);
+    free(shared.cpu_usage);
 
-    memset(&shared_state, 0, sizeof(shared_state));
+    memset(&shared, 0, sizeof(shared));
 
     iret = pthread_mutex_unlock(&printer_lock);
     assert(iret == 0);
@@ -69,11 +69,11 @@ printer_init(void *arg)
 
     free(arg);
 
-    shared_state.max_cpu_entries = max_cpu_entries;
-    shared_state.submitted_cpu_names = emalloc((size_t)max_cpu_entries * sizeof(shared_state.submitted_cpu_names[0]));
-    shared_state.submitted_cpu_usage = emalloc((size_t)max_cpu_entries * sizeof(shared_state.submitted_cpu_usage[0]));
+    shared.max_cpu_entries = max_cpu_entries;
+    shared.cpu_names = emalloc((size_t)max_cpu_entries * sizeof(shared.cpu_names[0]));
+    shared.cpu_usage = emalloc((size_t)max_cpu_entries * sizeof(shared.cpu_usage[0]));
 
-    shared_state.printer_initialized = true;
+    shared.printer_initialized = true;
 
     iret = pthread_cond_signal(&cond_on_printer_initialized);
     assert(iret == 0);
@@ -113,15 +113,15 @@ printer_submit_data(int n_cpu_entries, char cpu_names[n_cpu_entries][PROCSTATCPU
     assert(iret == 0);
     pthread_cleanup_push(cleanup_mutex_unlock, &printer_lock);
 
-    ensure_initialized(&shared_state.printer_initialized, &cond_on_printer_initialized, &printer_lock);
+    ensure_initialized(&shared.printer_initialized, &cond_on_printer_initialized, &printer_lock);
 
-    if (n_cpu_entries > shared_state.max_cpu_entries) {
+    if (n_cpu_entries > shared.max_cpu_entries) {
         eprint("Exceeded max_cpu_entries");
     } else {
-        memcpy(shared_state.submitted_cpu_names, cpu_names, (size_t)n_cpu_entries * sizeof(cpu_names[0]));
-        memcpy(shared_state.submitted_cpu_usage, cpu_usage, (size_t)n_cpu_entries * sizeof(cpu_usage[0]));
-        shared_state.n_submitted_cpu_entries = n_cpu_entries;
-        shared_state.new_data_submitted = true;
+        memcpy(shared.cpu_names, cpu_names, (size_t)n_cpu_entries * sizeof(cpu_names[0]));
+        memcpy(shared.cpu_usage, cpu_usage, (size_t)n_cpu_entries * sizeof(cpu_usage[0]));
+        shared.n_cpu_entries = n_cpu_entries;
+        shared.new_data_submitted = true;
 
         pthread_cond_signal(&cond_on_data_submitted);
     }

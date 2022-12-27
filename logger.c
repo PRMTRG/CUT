@@ -23,7 +23,7 @@ static struct {
     LoggerQueueEntry *logger_queue;
     int n_queue_slots;
     int n_queued;
-} shared_state;
+} shared;
 
 static pthread_mutex_t logger_lock = PTHREAD_MUTEX_INITIALIZER;
 
@@ -37,8 +37,8 @@ static pthread_cond_t cond_on_message_submitted = PTHREAD_COND_INITIALIZER;
 static void
 logger_write_queued_messages_to_log_file(FILE *log_file)
 {
-    for (int i = 0; i < shared_state.n_queued; i++) {
-        LoggerQueueEntry *queue_entry = &shared_state.logger_queue[i];
+    for (int i = 0; i < shared.n_queued; i++) {
+        LoggerQueueEntry *queue_entry = &shared.logger_queue[i];
         int iret = fputs(queue_entry->message, log_file);
         assert(iret != EOF);
         if (queue_entry->message_remainder) {
@@ -49,7 +49,7 @@ logger_write_queued_messages_to_log_file(FILE *log_file)
         iret = fputc('\n', log_file);
         assert(iret != EOF);
     }
-    shared_state.n_queued = 0;
+    shared.n_queued = 0;
 }
 
 static void
@@ -59,14 +59,14 @@ logger_handle_queued_messages(FILE *log_file)
     assert(iret == 0);
     pthread_cleanup_push(cleanup_mutex_unlock, &logger_lock);
 
-    if (shared_state.n_queued == 0) {
+    if (shared.n_queued == 0) {
         // TODO: Make this a timed wait
         iret = pthread_cond_wait(&cond_on_message_submitted, &logger_lock);
         assert(iret != EINVAL);
         assert(iret != EPERM);
     }
 
-    if (shared_state.n_queued > 0) {
+    if (shared.n_queued > 0) {
         logger_write_queued_messages_to_log_file(log_file);
 
         iret = pthread_cond_broadcast(&cond_on_queue_emptied);
@@ -82,20 +82,20 @@ logger_deinit(void *arg)
     int iret = pthread_mutex_lock(&logger_lock);
     assert(iret == 0);
 
-    LoggerPrivateState *private_state = arg;
+    LoggerPrivateState *priv = arg;
 
-    logger_write_queued_messages_to_log_file(private_state->log_file);
+    logger_write_queued_messages_to_log_file(priv->log_file);
 
-    if (private_state->log_file) {
-        iret = fclose(private_state->log_file);
+    if (priv->log_file) {
+        iret = fclose(priv->log_file);
         assert(iret == 0);
     }
 
-    free(private_state);
+    free(priv);
 
-    free(shared_state.logger_queue);
+    free(shared.logger_queue);
 
-    memset(&shared_state, 0, sizeof(shared_state));
+    memset(&shared, 0, sizeof(shared));
 
     iret = pthread_mutex_unlock(&logger_lock);
     assert(iret == 0);
@@ -107,24 +107,24 @@ logger_init(void)
     int iret = pthread_mutex_lock(&logger_lock);
     assert(iret == 0);
 
-    LoggerPrivateState *private_state = ecalloc(1, sizeof(*private_state));
+    LoggerPrivateState *priv = ecalloc(1, sizeof(*priv));
 
     const char *log_file_name = "log.txt";
 
-    private_state->log_file = fopen(log_file_name, "a");
-    if (!private_state->log_file) {
+    priv->log_file = fopen(log_file_name, "a");
+    if (!priv->log_file) {
         eprint("Failed to open log file (%s)", log_file_name);
-        logger_deinit(private_state);
+        logger_deinit(priv);
         pthread_exit(NULL);
     }
 
     int n_queue_slots = 5;
 
-    shared_state.n_queue_slots = n_queue_slots;
+    shared.n_queue_slots = n_queue_slots;
 
-    shared_state.logger_queue = emalloc((size_t)n_queue_slots * sizeof(shared_state.logger_queue[0]));
+    shared.logger_queue = emalloc((size_t)n_queue_slots * sizeof(shared.logger_queue[0]));
 
-    shared_state.logger_initialized = true;
+    shared.logger_initialized = true;
 
     iret = pthread_cond_broadcast(&cond_on_logger_initialized);
     assert(iret == 0);
@@ -132,14 +132,14 @@ logger_init(void)
     iret = pthread_mutex_unlock(&logger_lock);
     assert(iret == 0);
 
-    return private_state;
+    return priv;
 }
 
 static void
-logger_loop(LoggerPrivateState *private_state)
+logger_loop(LoggerPrivateState *priv)
 {
     while (1) {
-        logger_handle_queued_messages(private_state->log_file);
+        logger_handle_queued_messages(priv->log_file);
 
         // TODO: signal to watchdog
     }
@@ -150,11 +150,11 @@ logger_run(void *arg)
 {
     (void)(arg);
 
-    LoggerPrivateState *private_state = logger_init();
+    LoggerPrivateState *priv = logger_init();
 
-    pthread_cleanup_push(logger_deinit, private_state);
+    pthread_cleanup_push(logger_deinit, priv);
 
-    logger_loop(private_state);
+    logger_loop(priv);
 
     pthread_cleanup_pop(1);
 
@@ -170,15 +170,15 @@ logger_log_message(const char *message)
     assert(iret == 0);
     pthread_cleanup_push(cleanup_mutex_unlock, &logger_lock);
 
-    ensure_initialized(&shared_state.logger_initialized, &cond_on_logger_initialized, &logger_lock);
+    ensure_initialized(&shared.logger_initialized, &cond_on_logger_initialized, &logger_lock);
 
-    while (shared_state.n_queued >= shared_state.n_queue_slots) {
+    while (shared.n_queued >= shared.n_queue_slots) {
         iret = pthread_cond_wait(&cond_on_queue_emptied, &logger_lock);
         assert(iret != EINVAL);
         assert(iret != EPERM);
     }
 
-    LoggerQueueEntry *queue_slot = &shared_state.logger_queue[shared_state.n_queued];
+    LoggerQueueEntry *queue_slot = &shared.logger_queue[shared.n_queued];
 
     size_t total_length = strlen(message);
     size_t main_length;
@@ -210,7 +210,7 @@ logger_log_message(const char *message)
         queue_slot->message_remainder = rem_str;
     }
 
-    shared_state.n_queued++;
+    shared.n_queued++;
 
     iret = pthread_cond_signal(&cond_on_message_submitted);
     assert(iret == 0);
