@@ -8,7 +8,6 @@ op_flags="-O2"
 common_flags="-pthread -lm"
 
 source_files=(
-    "main.c"
     "proc_stat_utils.c"
     "reader.c"
     "analyzer.c"
@@ -20,6 +19,7 @@ source_files=(
 debug=false
 tests=false
 print=false
+valgrind=false # use Valgrind when running tests
 
 for arg in "$@"; do
     case "$arg" in
@@ -31,6 +31,10 @@ for arg in "$@"; do
         ;;
         "--print")
             print=true
+        ;;
+        "--valgrind")
+            valgrind=true
+            debug=true
         ;;
         *)
             echo "Unrecognized option: $arg"
@@ -66,7 +70,19 @@ else
 fi
 
 if [ "$print" == "true" ]; then
-    echo $comp_cmd -o cut "${source_files[@]}"
+    print_cmd="echo"
 else
-    $comp_cmd -o cut "${source_files[@]}"
+    print_cmd=
+fi
+
+$print_cmd $comp_cmd -o cut main.c "${source_files[@]}"
+
+if [ "$tests" == "true" ]; then
+    $print_cmd $comp_cmd -Wno-unused-function -Wno-unused-variable -Werror -o tests tests.c "${source_files[@]}"
+
+    if [ "$valgrind" == "true" ]; then
+        valgrind --leak-check=yes ./tests
+    else
+        ./tests
+    fi
 fi
