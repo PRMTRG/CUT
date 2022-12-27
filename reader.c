@@ -15,7 +15,7 @@
 #include "logger.h"
 
 typedef struct {
-    ReaderArgs args;
+    ReaderArgs *args;
     FILE *proc_stat_file;
     bool first_sleep_done;
     ProcStatCpuEntry *cpu_entries;
@@ -25,6 +25,8 @@ static void
 reader_deinit(void *arg)
 {
     ReaderPrivateState *private_state = arg;
+
+    free(private_state->args);
 
     if (private_state->proc_stat_file) {
         int iret = fclose(private_state->proc_stat_file);
@@ -41,8 +43,7 @@ reader_init(void *arg)
 {
     ReaderPrivateState *private_state = ecalloc(1, sizeof(*private_state));
 
-    memcpy(&private_state->args, arg, sizeof(private_state->args));
-    free(arg);
+    private_state->args = arg;
 
     private_state->proc_stat_file = fopen("/proc/stat", "r");
     if (!private_state->proc_stat_file) {
@@ -51,7 +52,7 @@ reader_init(void *arg)
         pthread_exit(NULL);
     }
 
-    private_state->cpu_entries = emalloc((size_t)private_state->args.max_cpu_entries * sizeof(private_state->cpu_entries[0]));
+    private_state->cpu_entries = emalloc((size_t)private_state->args->max_cpu_entries * sizeof(private_state->cpu_entries[0]));
 
     return private_state;
 }
@@ -61,7 +62,7 @@ reader_loop(ReaderPrivateState *private_state)
 {
     while (1) {
         int n_cpu_entries = read_and_parse_proc_stat_file(private_state->proc_stat_file,
-                private_state->args.max_cpu_entries, private_state->cpu_entries);
+                private_state->args->max_cpu_entries, private_state->cpu_entries);
         assert(n_cpu_entries > 1);
 
         bool bret = analyzer_submit_data(n_cpu_entries, private_state->cpu_entries);

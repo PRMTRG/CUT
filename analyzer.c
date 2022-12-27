@@ -12,7 +12,7 @@
 #include "thread_utils.h"
 
 typedef struct {
-    AnalyzerArgs args;
+    AnalyzerArgs *args;
     ProcStatCpuEntry *cpu_entries_arr[2];
     int n_cpu_entries_arr[2];
     int cpu_entries_next_index;
@@ -96,6 +96,7 @@ analyzer_deinit(void *arg)
 
     AnalyzerPrivateState *private_state = arg;
 
+    free(private_state->args);
     free(private_state->cpu_entries_arr[0]);
     free(private_state->cpu_entries_arr[1]);
     free(private_state->cpu_usage);
@@ -120,10 +121,9 @@ analyzer_init(void *arg)
     AnalyzerPrivateState *private_state = ecalloc(1, sizeof(*private_state));
     memset(&shared_state, 0, sizeof(shared_state));
 
-    memcpy(&private_state->args, arg, sizeof(private_state->args));
-    free(arg);
+    private_state->args = arg;
 
-    int max_cpu_entries = private_state->args.max_cpu_entries;
+    int max_cpu_entries = private_state->args->max_cpu_entries;
 
     private_state->cpu_entries_arr[0] = emalloc((size_t)max_cpu_entries * sizeof(private_state->cpu_entries_arr[0][0]));
     private_state->cpu_entries_arr[1] = emalloc((size_t)max_cpu_entries * sizeof(private_state->cpu_entries_arr[1][0]));
