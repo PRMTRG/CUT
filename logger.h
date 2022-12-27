@@ -21,9 +21,14 @@ void logger_log_message(const char *message);
 #define elog(...) do {                                                        \
     char _msg[512];                                                           \
     size_t _len = 0;                                                          \
-    _len += (size_t)snprintf(_msg, sizeof(_msg) - _len, "%s: ", __func__);    \
+    int _ret;                                                                 \
+    _ret = snprintf(_msg, sizeof(_msg) - _len, "%s: ", __func__);             \
+    if (_ret < 0) { abort(); }                                                \
+    _len += (size_t)_ret;                                                     \
     if (_len >= sizeof(_msg)) { abort(); }                                    \
-    _len += (size_t)snprintf(&_msg[_len], sizeof(_msg) - _len, __VA_ARGS__);  \
+    _ret = snprintf(&_msg[_len], sizeof(_msg) - _len, __VA_ARGS__);           \
+    if (_ret < 0) { abort(); }                                                \
+    _len += (size_t)_ret;                                                     \
     if (_len >= sizeof(_msg)) { abort(); }                                    \
     logger_log_message(_msg);                                                 \
 } while (0)
