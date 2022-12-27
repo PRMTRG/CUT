@@ -49,7 +49,7 @@ read_and_parse_proc_stat_file(FILE proc_stat_file[static 1], int max_cpu_entries
 }
 
 bool
-calculate_cpu_usage(int n_cpu_entries, ProcStatCpuEntry previous_stats[n_cpu_entries], ProcStatCpuEntry current_stats[n_cpu_entries], float cpu_usage[n_cpu_entries])
+calculate_cpu_usage(int n_cpu_entries, ProcStatCpuEntry previous_stats[n_cpu_entries], ProcStatCpuEntry current_stats[n_cpu_entries], double cpu_usage[n_cpu_entries])
 {
     for (int i = 0; i < n_cpu_entries; i++) {
         ProcStatCpuEntry *prev = &previous_stats[i];
@@ -74,17 +74,17 @@ calculate_cpu_usage(int n_cpu_entries, ProcStatCpuEntry previous_stats[n_cpu_ent
             return false;
         }
 
-        cpu_usage[i] = (float)(total_d - idle_d) / (float)total_d * 100;
+        cpu_usage[i] = (double)(total_d - idle_d) / (double)total_d * 100;
     }
 
     return true;
 }
 
 static void
-print_usage_bar(float percentage)
+print_usage_bar(double percentage)
 {
     percentage /= 5;
-    int n_filled = (int)lroundf(percentage);
+    int n_filled = (int)lround(percentage);
 
     printf("[");
     for (int i = 0; i < n_filled; i++) {
@@ -97,7 +97,7 @@ print_usage_bar(float percentage)
 }
 
 void
-print_cpu_usage(int n_cpu_entries, char cpu_names[n_cpu_entries][PROCSTATCPUENTRY_CPU_NAME_SIZE], float cpu_usage[n_cpu_entries])
+print_cpu_usage(int n_cpu_entries, char cpu_names[n_cpu_entries][PROCSTATCPUENTRY_CPU_NAME_SIZE], double cpu_usage[n_cpu_entries])
 {
     if (n_cpu_entries < 2) {
         return;
@@ -108,14 +108,14 @@ print_cpu_usage(int n_cpu_entries, char cpu_names[n_cpu_entries][PROCSTATCPUENTR
 
     printf("Avg.\t");
     print_usage_bar(cpu_usage[0]);
-    printf(" %5.1f%%\n", (double)cpu_usage[0]);
+    printf(" %5.1f%%\n", cpu_usage[0]);
 
     int n_cols = 2;
     int col_cnt = 0;
     for (int i = 1; i < n_cpu_entries; i++, col_cnt++) {
         printf("%s\t", cpu_names[i]);
         print_usage_bar(cpu_usage[i]);
-        printf(" %5.1f%%", (double)cpu_usage[i]);
+        printf(" %5.1f%%", cpu_usage[i]);
         (col_cnt + 1) % n_cols == 0 ? printf("\n") : printf("\t\t");
     }
     if ((col_cnt + 1) % n_cols == 0) {

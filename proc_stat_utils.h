@@ -52,12 +52,12 @@ int read_and_parse_proc_stat_file(FILE proc_stat_file[static 1], int max_cpu_ent
  *
  * Might fail if the CPU entries are filled with invalid data, such that the calculations would result in an arithmetic exception.
  */
-bool calculate_cpu_usage(int n_cpu_entries, ProcStatCpuEntry previous_stats[n_cpu_entries], ProcStatCpuEntry current_stats[n_cpu_entries], float cpu_usage[n_cpu_entries]);
+bool calculate_cpu_usage(int n_cpu_entries, ProcStatCpuEntry previous_stats[n_cpu_entries], ProcStatCpuEntry current_stats[n_cpu_entries], double cpu_usage[n_cpu_entries]);
 
 /*
  * Print CPU usage stored in the cpu_usage array.
  * If n is less than 2 the function doesn't do anything.
  */
-void print_cpu_usage(int n_cpu_entries, char cpu_names[n_cpu_entries][PROCSTATCPUENTRY_CPU_NAME_SIZE], float cpu_usage[n_cpu_entries]);
+void print_cpu_usage(int n_cpu_entries, char cpu_names[n_cpu_entries][PROCSTATCPUENTRY_CPU_NAME_SIZE], double cpu_usage[n_cpu_entries]);
 
 #endif /* PROC_STAT_UTILS_H */

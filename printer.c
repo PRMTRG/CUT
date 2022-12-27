@@ -13,7 +13,7 @@ static struct {
     int max_cpu_entries;
     int n_submitted_cpu_entries;
     char (*submitted_cpu_names)[PROCSTATCPUENTRY_CPU_NAME_SIZE];
-    float *submitted_cpu_usage;
+    double *submitted_cpu_usage;
     bool new_data_submitted;
 } shared_state;
 
@@ -107,7 +107,7 @@ printer_run(void *arg)
 }
 
 void
-printer_submit_data(int n_cpu_entries, char cpu_names[n_cpu_entries][PROCSTATCPUENTRY_CPU_NAME_SIZE], float cpu_usage[n_cpu_entries])
+printer_submit_data(int n_cpu_entries, char cpu_names[n_cpu_entries][PROCSTATCPUENTRY_CPU_NAME_SIZE], double cpu_usage[n_cpu_entries])
 {
     int iret = pthread_mutex_lock(&printer_lock);
     assert(iret == 0);

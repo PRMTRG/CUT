@@ -9,6 +9,6 @@ typedef struct {
 
 void * printer_run(void *arg);
 
-void printer_submit_data(int n_cpu_entries, char cpu_names[n_cpu_entries][PROCSTATCPUENTRY_CPU_NAME_SIZE], float cpu_usage[n_cpu_entries]);
+void printer_submit_data(int n_cpu_entries, char cpu_names[n_cpu_entries][PROCSTATCPUENTRY_CPU_NAME_SIZE], double cpu_usage[n_cpu_entries]);
 
 #endif /* PRINTER_H */

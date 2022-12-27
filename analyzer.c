@@ -17,7 +17,7 @@ typedef struct {
     int n_cpu_entries_arr[2];
     int cpu_entries_next_index;
     int n_cpu_usage;
-    float *cpu_usage;
+    double *cpu_usage;
     char (*cpu_names)[PROCSTATCPUENTRY_CPU_NAME_SIZE];
 } AnalyzerPrivateState;
 
