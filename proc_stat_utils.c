@@ -4,6 +4,7 @@
 
 #include "proc_stat_utils.h"
 #include "utils.h"
+#include "logger.h"
 
 int
 read_and_parse_proc_stat_file(FILE proc_stat_file[static 1], int max_cpu_entries, ProcStatCpuEntry cpu_entries[max_cpu_entries])
@@ -17,7 +18,7 @@ read_and_parse_proc_stat_file(FILE proc_stat_file[static 1], int max_cpu_entries
         }
 
         if (n_cpu_entries >= max_cpu_entries) {
-            eprint("Exceeded max_cpu_entries");
+            elog("Exceeded max_cpu_entries");
             return -1;
         }
 
@@ -28,20 +29,20 @@ read_and_parse_proc_stat_file(FILE proc_stat_file[static 1], int max_cpu_entries
                 ce->cpu_name, &ce->user, &ce->nice, &ce->system, &ce->idle, &ce->iowait,
                 &ce->irq, &ce->softirq, &ce->steal, &ce->guest, &ce->guest_nice);
         if (ret != 11) {
-            eprint("Parsing CPU entry failed");
+            elog("Parsing CPU entry failed");
             return -1;
         }
 
         n_cpu_entries++;
     }
     if (ferror(proc_stat_file)) {
-        eprint("IO error");
+        elog("IO error");
         return -1;
     }
 
     int iret = fseek(proc_stat_file, 0, SEEK_SET);
     if (iret != 0) {
-        eprint("IO error");
+        elog("IO error");
         return -1;
     }
 
