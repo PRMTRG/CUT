@@ -7,7 +7,6 @@
 #include <errno.h>
 
 void cleanup_mutex_unlock(void *mutex);
-void cleanup_fclose(void *file);
 
 static inline void
 ensure_initialized(bool is_initialized[static 1], pthread_cond_t cond_on_initialized[static 1], pthread_mutex_t mutex[static 1])
