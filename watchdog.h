@@ -1,6 +1,10 @@
 #ifndef WATCHDOG_H
 #define WATCHDOG_H
 
+/*
+ * In order for Watchdog to correctly handle signals the relevant signals
+ * must be masked (blocked) in all other threads.
+ */
 void * watchdog_run(void *arg);
 
 /*
