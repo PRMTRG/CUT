@@ -171,7 +171,7 @@ watchdog_signal_active(const char *name)
     if (i == shared.n_watched_threads) {
         if ((size_t)shared.n_watched_threads >= sizeof(shared.watched_threads) / sizeof(shared.watched_threads[0])) {
             EPRINT("Exceeded maximum number of watched threads");
-            // TODO: Send exit signal
+            ELOG(true, "Exceeded maximum number of watched threads");
             pthread_exit(NULL);
         }
         shared.n_watched_threads++;
