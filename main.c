@@ -80,13 +80,6 @@ main(int argc, char **argv)
     iret = pthread_create(&logger, NULL, logger_run, logger_args);
     assert(iret == 0);
 
-    sleep(15);
-    pthread_cancel(reader);
-    pthread_cancel(analyzer);
-    pthread_cancel(printer);
-    pthread_cancel(logger);
-    pthread_cancel(watchdog);
-
     iret = pthread_join(reader, NULL);
     assert(iret == 0);
 
