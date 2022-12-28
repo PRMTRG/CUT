@@ -67,7 +67,13 @@ logger_handle_queued_messages(FILE *log_file)
     }
 
     if (shared.n_queued > 0) {
+        iret = pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, NULL);
+        assert(iret == 0);
+
         logger_write_queued_messages_to_log_file(log_file);
+
+        iret = pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
+        assert(iret == 0);
 
         iret = pthread_cond_broadcast(&cond_on_queue_emptied);
         assert(iret == 0);
