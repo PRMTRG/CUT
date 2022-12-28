@@ -114,7 +114,7 @@ logger_init(void)
 
     priv->log_file = fopen(log_file_name, "a");
     if (!priv->log_file) {
-        eprint("Failed to open log file (%s)", log_file_name);
+        EPRINT("Failed to open log file (%s)", log_file_name);
         logger_deinit(priv);
         pthread_exit(NULL);
     }
@@ -217,7 +217,7 @@ logger_log_message(bool dont_block_on_fail, const char *message)
             /* Heap-allocated messages are freed in write_queued_messages_to_log_file() */
             char *rem_str = malloc(remainder_length + 1);
             if (!rem_str) {
-                eprint("malloc() failed. (non-critical)");
+                EPRINT("malloc() failed. (non-critical)");
             } else {
                 memcpy(rem_str, &message[main_length], remainder_length + 1);
             }

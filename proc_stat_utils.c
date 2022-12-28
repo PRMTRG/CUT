@@ -18,7 +18,7 @@ read_and_parse_proc_stat_file(FILE proc_stat_file[static 1], int max_cpu_entries
         }
 
         if (n_cpu_entries >= max_cpu_entries) {
-            elog(true, "Exceeded max_cpu_entries");
+            ELOG(true, "Exceeded max_cpu_entries");
             return -1;
         }
 
@@ -29,20 +29,20 @@ read_and_parse_proc_stat_file(FILE proc_stat_file[static 1], int max_cpu_entries
                 ce->cpu_name, &ce->user, &ce->nice, &ce->system, &ce->idle, &ce->iowait,
                 &ce->irq, &ce->softirq, &ce->steal, &ce->guest, &ce->guest_nice);
         if (ret != 11) {
-            elog(true, "Parsing CPU entry failed");
+            ELOG(true, "Parsing CPU entry failed");
             return -1;
         }
 
         n_cpu_entries++;
     }
     if (ferror(proc_stat_file)) {
-        elog(true, "IO error");
+        ELOG(true, "IO error");
         return -1;
     }
 
     int iret = fseek(proc_stat_file, 0, SEEK_SET);
     if (iret != 0) {
-        elog(true, "IO error");
+        ELOG(true, "IO error");
         return -1;
     }
 

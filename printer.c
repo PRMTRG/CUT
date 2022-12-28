@@ -119,7 +119,7 @@ printer_submit_data(int n_cpu_entries, char cpu_names[n_cpu_entries][PROCSTATCPU
     ensure_initialized(&shared.printer_initialized, &cond_on_printer_initialized, &printer_lock);
 
     if (n_cpu_entries > shared.max_cpu_entries) {
-        elog(false, "Exceeded max_cpu_entries");
+        ELOG(false, "Exceeded max_cpu_entries");
     } else {
         memcpy(shared.cpu_names, cpu_names, (size_t)n_cpu_entries * sizeof(cpu_names[0]));
         memcpy(shared.cpu_usage, cpu_usage, (size_t)n_cpu_entries * sizeof(cpu_usage[0]));

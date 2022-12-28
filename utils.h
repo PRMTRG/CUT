@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define eprint(...) do { fprintf(stderr, "%s: ", __func__); fprintf(stderr, __VA_ARGS__); fprintf(stderr, "\n"); } while (0)
+#define EPRINT(...) do { fprintf(stderr, "%s: ", __func__); fprintf(stderr, __VA_ARGS__); fprintf(stderr, "\n"); } while (0)
 
 static inline void *
 malloc_or_exit(size_t size, const char *calling_function)

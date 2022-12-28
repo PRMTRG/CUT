@@ -21,7 +21,7 @@ void logger_log_message(bool dont_block_on_fail, const char *message);
  * Log formatted message and the calling function name.
  * This macro can only handle messages up to 511 characters in total length.
  */
-#define elog(dont_block_on_fail, ...) do {                                    \
+#define ELOG(dont_block_on_fail, ...) do {                                    \
     char _msg[512];                                                           \
     size_t _len = 0;                                                          \
     int _ret;                                                                 \
