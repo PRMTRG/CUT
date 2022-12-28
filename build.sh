@@ -5,7 +5,7 @@ gcc_flags="-Wall -Wextra -std=c99 -pedantic"
 clang_flags="-Weverything -Wno-declaration-after-statement -Wno-vla -Wno-extra-semi-stmt -Wno-missing-noreturn -Wno-padded -std=c99 -pedantic"
 debug_flags="-g"
 op_flags="-O2"
-common_flags="-pthread -lm -lrt"
+common_flags="-D_POSIX_C_SOURCE=1 -pthread -lm -lrt"
 
 source_files=(
     "proc_stat_utils.c"
