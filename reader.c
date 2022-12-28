@@ -47,7 +47,7 @@ reader_init(void *arg)
 
     priv->proc_stat_file = fopen("/proc/stat", "r");
     if (!priv->proc_stat_file) {
-        elog("Failed to open /proc/stat");
+        elog(false, "Failed to open /proc/stat");
         reader_deinit(priv);
         pthread_exit(NULL);
     }

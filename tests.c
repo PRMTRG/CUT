@@ -23,10 +23,6 @@ test_proc_stat_parse(void)
 
     int iret;
 
-    pthread_t logger;
-    iret = pthread_create(&logger, NULL, logger_run, NULL);
-    assert(iret == 0);
-
     /*
      * Test that the correct number of entries gets parsed from /proc/stat
      * and that the file position gets reset to beginning.
@@ -66,11 +62,6 @@ test_proc_stat_parse(void)
         assert(fclose(proc_stat_file) == 0);
     }
 
-    iret = pthread_cancel(logger);
-    assert(iret == 0);
-    iret = pthread_join(logger, NULL);
-    assert(iret == 0);
-
     printf("%s OK\n", __func__);
 }
 
@@ -82,7 +73,7 @@ logger_message_thread_run(void *arg)
 {
     char *msg = arg;
 
-    logger_log_message(arg);
+    logger_log_message(false, arg);
 
     pthread_exit(NULL);
 }
@@ -156,8 +147,8 @@ logger_multiple_messages_thread_run(void *arg)
     (void)(arg);
 
     for (int i = 0; i < 50; i++) {
-        logger_log_message(short_message);
-        logger_log_message(long_message);
+        logger_log_message(false, short_message);
+        logger_log_message(false, long_message);
     }
 
     pthread_exit(NULL);

@@ -24,9 +24,6 @@ typedef struct {
  * Read and parse the contents of the /proc/stat file, and save CPU time stats to cpu_entries.
  * The first entry is the CPU average, the subsequent entries are for each CPU core/thread.
  *
- * This function logs errors via the logger. If the logger thread isn't running and an error occurs
- * this function will block indefinitely.
- *
  * Params
  *  proc_stat_file:
  *      Valid pointer to an fopen()'ed /proc/stat file.

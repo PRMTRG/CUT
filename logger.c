@@ -1,6 +1,7 @@
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
 #include <string.h>
 #include <assert.h>
 #include <errno.h>
@@ -162,7 +163,7 @@ logger_run(void *arg)
 }
 
 void
-logger_log_message(const char *message)
+logger_log_message(bool dont_block_on_fail, const char *message)
 {
     assert(message);
 
@@ -170,50 +171,64 @@ logger_log_message(const char *message)
     assert(iret == 0);
     pthread_cleanup_push(cleanup_mutex_unlock, &logger_lock);
 
-    ensure_initialized(&shared.logger_initialized, &cond_on_logger_initialized, &logger_lock);
+    bool can_log = true;
+
+    if (!dont_block_on_fail) {
+        ensure_initialized(&shared.logger_initialized, &cond_on_logger_initialized, &logger_lock);
+    }
+
+    if (!shared.logger_initialized) {
+        can_log = false;
+    }
 
     while (shared.n_queued >= shared.n_queue_slots) {
+        if (dont_block_on_fail) {
+            can_log = false;
+            break;
+        }
         iret = pthread_cond_wait(&cond_on_queue_emptied, &logger_lock);
         assert(iret != EINVAL);
         assert(iret != EPERM);
     }
 
-    LoggerQueueEntry *queue_slot = &shared.logger_queue[shared.n_queued];
+    if (can_log) {
+        LoggerQueueEntry *queue_slot = &shared.logger_queue[shared.n_queued];
 
-    size_t total_length = strlen(message);
-    size_t main_length;
-    size_t remainder_length;
+        size_t total_length = strlen(message);
+        size_t main_length;
+        size_t remainder_length;
 
-    const size_t max_main_length = sizeof(queue_slot->message) - 1;
+        const size_t max_main_length = sizeof(queue_slot->message) - 1;
 
-    if (total_length > max_main_length) {
-        main_length = max_main_length;
-        remainder_length = total_length - max_main_length;
-    } else {
-        main_length = total_length;
-        remainder_length = 0;
-    }
-
-    memcpy(queue_slot->message, message, main_length);
-    queue_slot->message[main_length] = '\0';
-
-    if (remainder_length == 0) {
-        queue_slot->message_remainder = NULL;
-    } else {
-        /* Heap-allocated messages are freed in write_queued_messages_to_log_file() */
-        char *rem_str = malloc(remainder_length + 1);
-        if (!rem_str) {
-            eprint("malloc() failed. (non-critical)");
+        if (total_length > max_main_length) {
+            main_length = max_main_length;
+            remainder_length = total_length - max_main_length;
         } else {
-            memcpy(rem_str, &message[main_length], remainder_length + 1);
+            main_length = total_length;
+            remainder_length = 0;
         }
-        queue_slot->message_remainder = rem_str;
+
+        memcpy(queue_slot->message, message, main_length);
+        queue_slot->message[main_length] = '\0';
+
+        if (remainder_length == 0) {
+            queue_slot->message_remainder = NULL;
+        } else {
+            /* Heap-allocated messages are freed in write_queued_messages_to_log_file() */
+            char *rem_str = malloc(remainder_length + 1);
+            if (!rem_str) {
+                eprint("malloc() failed. (non-critical)");
+            } else {
+                memcpy(rem_str, &message[main_length], remainder_length + 1);
+            }
+            queue_slot->message_remainder = rem_str;
+        }
+
+        shared.n_queued++;
+
+        iret = pthread_cond_signal(&cond_on_message_submitted);
+        assert(iret == 0);
     }
-
-    shared.n_queued++;
-
-    iret = pthread_cond_signal(&cond_on_message_submitted);
-    assert(iret == 0);
 
     pthread_cleanup_pop(1);
 }
