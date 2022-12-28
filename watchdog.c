@@ -51,7 +51,7 @@ watchdog_check_threads_activity(void)
         struct timespec *last_activity = &shared.watched_threads[i].last_activity;
 
         double diff = 0;
-        diff += now.tv_sec - last_activity->tv_sec;
+        diff += (double)(now.tv_sec - last_activity->tv_sec);
         diff += (now.tv_nsec - last_activity->tv_nsec) / (1000 * 1000 * 1000);
 
         if (diff > 2) {
