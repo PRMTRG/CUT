@@ -79,6 +79,8 @@ watchdog_deinit(void *arg)
 
     memset(&shared, 0, sizeof(shared));
 
+    signal_received = 0;
+
     iret = pthread_mutex_unlock(&watchdog_lock);
     assert(iret == 0);
 }
