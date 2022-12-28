@@ -214,6 +214,50 @@ test_logger_many_messages(void)
     printf("%s OK\n", __func__);
 }
 
+static void *
+thread_that_hangs_run(void *arg)
+{
+    (void)(arg);
+
+    watchdog_signal_active("Thread that hangs");
+
+    sleep(621);
+
+    pthread_exit(NULL);
+}
+
+static void
+test_watchdog_hanged_thread(void)
+{
+    /*
+     * Start the Watchdog thread and one other thread.
+     * The thread will add itself to the Watchdog's watched threads list,
+     * after that it will hang.
+     * Verify that the hanged thread gets cancelled by the Watchdog.
+     */
+
+    pthread_t watchdog;
+    pthread_t hanging_thread;
+
+    void *retval;
+
+    int iret = pthread_create(&watchdog, NULL, watchdog_run, NULL);
+    assert(iret == 0);
+
+    iret = pthread_create(&hanging_thread, NULL, thread_that_hangs_run, NULL);
+    assert(iret == 0);
+
+    iret = pthread_join(hanging_thread, &retval);
+    assert(iret == 0);
+    /* Check that the thread was cancelled */
+    assert(retval == PTHREAD_CANCELED);
+
+    iret = pthread_join(watchdog, NULL);
+    assert(iret == 0);
+
+    printf("%s OK\n", __func__);
+}
+
 static void
 test_restarting_threads(void)
 {
@@ -293,5 +337,6 @@ main(int argc, char **argv)
     test_proc_stat_parse();
     test_logger_long_message();
     test_logger_many_messages();
+    test_watchdog_hanged_thread();
 
 }
