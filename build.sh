@@ -82,8 +82,8 @@ if [ "$tests" == "true" ]; then
     $print_cmd $comp_cmd -Wno-unused-function -Wno-unused-variable -Werror -o tests tests.c "${source_files[@]}"
 
     if [ "$valgrind" == "true" ]; then
-        valgrind --leak-check=yes ./tests
+        $print_cmd valgrind --leak-check=yes ./tests
     else
-        ./tests
+        $print_cmd ./tests
     fi
 fi
