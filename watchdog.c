@@ -58,8 +58,8 @@ watchdog_check_threads_activity(void)
             EPRINT("Thread \"%s\" timed out. Exiting the program.", shared.watched_threads[i].name);
             ELOG(true, "Thread \"%s\" timed out. Exiting the program.", shared.watched_threads[i].name);
 
-            for (int i = 0; i < shared.n_watched_threads; i++) {
-                pthread_cancel(shared.watched_threads[i].id);
+            for (int j = 0; j < shared.n_watched_threads; j++) {
+                pthread_cancel(shared.watched_threads[j].id);
             }
 
             pthread_exit(NULL);
