@@ -5,7 +5,8 @@ gcc_flags="-Wall -Wextra -std=c99 -pedantic"
 clang_flags="-Weverything -Wno-declaration-after-statement -Wno-vla -Wno-extra-semi-stmt -Wno-missing-noreturn -Wno-padded -Wno-disabled-macro-expansion -std=c99 -pedantic"
 debug_flags="-g"
 op_flags="-O2"
-common_flags="-D_POSIX_C_SOURCE=1 -pthread -lm -lrt"
+common_flags="-D_POSIX_C_SOURCE=1 -pthread"
+linker_flags="-lm -lrt"
 
 source_files=(
     "proc_stat_utils.c"
@@ -76,10 +77,10 @@ else
     print_cmd=
 fi
 
-$print_cmd $comp_cmd -o cut main.c "${source_files[@]}"
+$print_cmd $comp_cmd -o cut main.c "${source_files[@]}" $linker_flags
 
 if [ "$tests" == "true" ]; then
-    $print_cmd $comp_cmd -Wno-unused-function -Wno-unused-variable -Werror -o tests tests.c "${source_files[@]}"
+    $print_cmd $comp_cmd -Wno-unused-function -Wno-unused-variable -Werror -o tests tests.c "${source_files[@]}" $linker_flags
 
     if [ "$valgrind" == "true" ]; then
         $print_cmd valgrind --leak-check=yes ./tests
