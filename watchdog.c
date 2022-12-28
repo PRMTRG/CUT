@@ -76,13 +76,13 @@ watchdog_deinit(void *arg)
 
     int iret = pthread_mutex_lock(&watchdog_lock);
     assert(iret == 0);
+    pthread_cleanup_push(cleanup_mutex_unlock, &watchdog_lock);
 
     memset(&shared, 0, sizeof(shared));
 
     signal_received = 0;
 
-    iret = pthread_mutex_unlock(&watchdog_lock);
-    assert(iret == 0);
+    pthread_cleanup_pop(1);
 }
 
 static void
@@ -90,6 +90,7 @@ watchdog_init(void)
 {
     int iret = pthread_mutex_lock(&watchdog_lock);
     assert(iret == 0);
+    pthread_cleanup_push(cleanup_mutex_unlock, &watchdog_lock);
 
     shared.watchdog_initialized = true;
 
@@ -108,8 +109,7 @@ watchdog_init(void)
     iret = pthread_cond_signal(&cond_on_watchdog_initialized);
     assert(iret == 0);
 
-    iret = pthread_mutex_unlock(&watchdog_lock);
-    assert(iret == 0);
+    pthread_cleanup_pop(1);
 }
 
 static void

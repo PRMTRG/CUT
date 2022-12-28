@@ -93,6 +93,7 @@ analyzer_deinit(void *arg)
 {
     int iret = pthread_mutex_lock(&analyzer_lock);
     assert(iret == 0);
+    pthread_cleanup_push(cleanup_mutex_unlock, &analyzer_lock);
 
     AnalyzerPrivateState *priv = arg;
 
@@ -108,17 +109,19 @@ analyzer_deinit(void *arg)
 
     memset(&shared, 0, sizeof(shared));
 
-    iret = pthread_mutex_unlock(&analyzer_lock);
-    assert(iret == 0);
+    pthread_cleanup_pop(1);
 }
 
 static AnalyzerPrivateState *
 analyzer_init(void *arg)
 {
+    AnalyzerPrivateState *priv;
+
     int iret = pthread_mutex_lock(&analyzer_lock);
     assert(iret == 0);
+    pthread_cleanup_push(cleanup_mutex_unlock, &analyzer_lock);
 
-    AnalyzerPrivateState *priv = ecalloc(1, sizeof(*priv));
+    priv = ecalloc(1, sizeof(*priv));
     memset(&shared, 0, sizeof(shared));
 
     priv->args = arg;
@@ -138,8 +141,7 @@ analyzer_init(void *arg)
     iret = pthread_cond_signal(&cond_on_analyzer_initialized);
     assert(iret == 0);
 
-    iret = pthread_mutex_unlock(&analyzer_lock);
-    assert(iret == 0);
+    pthread_cleanup_pop(1);
 
     return priv;
 }

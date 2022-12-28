@@ -53,6 +53,7 @@ printer_deinit(void *arg)
 {
     int iret = pthread_mutex_lock(&printer_lock);
     assert(iret == 0);
+    pthread_cleanup_push(cleanup_mutex_unlock, &printer_lock);
 
     PrinterPrivateState *priv = arg;
 
@@ -64,17 +65,19 @@ printer_deinit(void *arg)
 
     memset(&shared, 0, sizeof(shared));
 
-    iret = pthread_mutex_unlock(&printer_lock);
-    assert(iret == 0);
+    pthread_cleanup_pop(1);
 }
 
 static PrinterPrivateState *
 printer_init(void *arg)
 {
+    PrinterPrivateState *priv;
+
     int iret = pthread_mutex_lock(&printer_lock);
     assert(iret == 0);
+    pthread_cleanup_push(cleanup_mutex_unlock, &printer_lock);
 
-    PrinterPrivateState *priv = ecalloc(1, sizeof(*priv));
+    priv = ecalloc(1, sizeof(*priv));
 
     priv->args = arg;
 
@@ -89,8 +92,7 @@ printer_init(void *arg)
     iret = pthread_cond_signal(&cond_on_printer_initialized);
     assert(iret == 0);
 
-    iret = pthread_mutex_unlock(&printer_lock);
-    assert(iret == 0);
+    pthread_cleanup_pop(1);
 
     return priv;
 }

@@ -81,6 +81,7 @@ logger_deinit(void *arg)
 {
     int iret = pthread_mutex_lock(&logger_lock);
     assert(iret == 0);
+    pthread_cleanup_push(cleanup_mutex_unlock, &logger_lock);
 
     LoggerPrivateState *priv = arg;
 
@@ -98,8 +99,7 @@ logger_deinit(void *arg)
 
     memset(&shared, 0, sizeof(shared));
 
-    iret = pthread_mutex_unlock(&logger_lock);
-    assert(iret == 0);
+    pthread_cleanup_pop(1);
 }
 
 static LoggerPrivateState *
@@ -117,6 +117,10 @@ logger_init(void *arg)
     priv->log_file = fopen(log_file_name, "a");
     if (!priv->log_file) {
         EPRINT("Failed to open log file (%s)", log_file_name);
+
+        iret = pthread_mutex_unlock(&logger_lock);
+        assert(iret == 0);
+
         logger_deinit(priv);
         pthread_exit(NULL);
     }
