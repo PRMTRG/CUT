@@ -1,6 +1,7 @@
 # CPU usage tracker
 
 Terminal program that displays the average and per-core CPU usage.
+
 Written using C99 and POSIX threads.
 
 ## Building
