@@ -13,6 +13,7 @@
 #include "analyzer.h"
 #include "printer.h"
 #include "logger.h"
+#include "watchdog.h"
 
 static void
 test_proc_stat_parse(void)
@@ -95,7 +96,9 @@ test_logger_long_message(void)
 
     int iret;
 
-    iret = pthread_create(&logger, NULL, logger_run, NULL);
+    LoggerArgs *logger_args = ecalloc(1, sizeof(*logger_args));
+
+    iret = pthread_create(&logger, NULL, logger_run, logger_args);
     assert(iret == 0);
     iret = pthread_create(&thread_a, NULL, logger_message_thread_run, short_message);
     assert(iret == 0);
@@ -171,7 +174,9 @@ test_logger_many_messages(void)
 
     int iret;
 
-    iret = pthread_create(&logger, NULL, logger_run, NULL);
+    LoggerArgs *logger_args = ecalloc(1, sizeof(*logger_args));
+
+    iret = pthread_create(&logger, NULL, logger_run, logger_args);
     assert(iret == 0);
 
     for (int i = 0; i < n_threads; i++) {
@@ -221,6 +226,7 @@ test_restarting_threads(void)
 
     for (int i = 0; i < 3; i++) {
 
+        pthread_t watchdog;
         pthread_t reader;
         pthread_t analyzer;
         pthread_t printer;
@@ -235,19 +241,25 @@ test_restarting_threads(void)
         PrinterArgs *printer_args = ecalloc(1, sizeof(*printer_args));
         printer_args->max_cpu_entries = max_cpu_entries;
 
+        LoggerArgs *logger_args = ecalloc(1, sizeof(*logger_args));
+
         int iret;
 
+        iret = pthread_create(&watchdog, NULL, watchdog_run, NULL);
+        assert(iret == 0);
         iret = pthread_create(&reader, NULL, reader_run, reader_args);
         assert(iret == 0);
         iret = pthread_create(&analyzer, NULL, analyzer_run, analyzer_args);
         assert(iret == 0);
         iret = pthread_create(&printer, NULL, printer_run, printer_args);
         assert(iret == 0);
-        iret = pthread_create(&logger, NULL, logger_run, NULL);
+        iret = pthread_create(&logger, NULL, logger_run, logger_args);
         assert(iret == 0);
 
         sleep(5);
 
+        iret = pthread_cancel(watchdog);
+        assert(iret == 0);
         iret = pthread_cancel(reader);
         assert(iret == 0);
         iret = pthread_cancel(analyzer);
@@ -257,6 +269,8 @@ test_restarting_threads(void)
         iret = pthread_cancel(logger);
         assert(iret == 0);
 
+        iret = pthread_join(watchdog, NULL);
+        assert(iret == 0);
         iret = pthread_join(reader, NULL);
         assert(iret == 0);
         iret = pthread_join(analyzer, NULL);

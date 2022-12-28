@@ -9,6 +9,7 @@
 #include "logger.h"
 #include "utils.h"
 #include "thread_utils.h"
+#include "watchdog.h"
 
 typedef struct {
     char message[512];
@@ -16,6 +17,7 @@ typedef struct {
 } LoggerQueueEntry;
 
 typedef struct {
+    LoggerArgs *args;
     FILE *log_file;
 } LoggerPrivateState;
 
@@ -61,10 +63,7 @@ logger_handle_queued_messages(FILE *log_file)
     pthread_cleanup_push(cleanup_mutex_unlock, &logger_lock);
 
     if (shared.n_queued == 0) {
-        // TODO: Make this a timed wait
-        iret = pthread_cond_wait(&cond_on_message_submitted, &logger_lock);
-        assert(iret != EINVAL);
-        assert(iret != EPERM);
+        cond_wait_seconds(&cond_on_message_submitted, &logger_lock, 1);
     }
 
     if (shared.n_queued > 0) {
@@ -92,6 +91,7 @@ logger_deinit(void *arg)
         assert(iret == 0);
     }
 
+    free(priv->args);
     free(priv);
 
     free(shared.logger_queue);
@@ -103,12 +103,14 @@ logger_deinit(void *arg)
 }
 
 static LoggerPrivateState *
-logger_init(void)
+logger_init(void *arg)
 {
     int iret = pthread_mutex_lock(&logger_lock);
     assert(iret == 0);
 
     LoggerPrivateState *priv = ecalloc(1, sizeof(*priv));
+
+    priv->args = arg;
 
     const char *log_file_name = "log.txt";
 
@@ -142,16 +144,18 @@ logger_loop(LoggerPrivateState *priv)
     while (1) {
         logger_handle_queued_messages(priv->log_file);
 
-        // TODO: signal to watchdog
+        if (priv->args->use_watchdog) {
+            watchdog_signal_active("Logger");
+        }
     }
 }
 
 void *
 logger_run(void *arg)
 {
-    (void)(arg);
+    assert(arg);
 
-    LoggerPrivateState *priv = logger_init();
+    LoggerPrivateState *priv = logger_init(arg);
 
     pthread_cleanup_push(logger_deinit, priv);
 

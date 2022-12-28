@@ -5,6 +5,7 @@
 
 typedef struct {
     int max_cpu_entries;
+    bool use_watchdog;
 } PrinterArgs;
 
 void * printer_run(void *arg);

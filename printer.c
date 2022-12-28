@@ -8,8 +8,14 @@
 #include "proc_stat_utils.h"
 #include "thread_utils.h"
 #include "logger.h"
+#include "watchdog.h"
+
+typedef struct {
+    PrinterArgs *args;
+} PrinterPrivateState;
 
 static struct {
+    PrinterArgs *args;
     bool printer_initialized;
     int max_cpu_entries;
     int n_cpu_entries;
@@ -31,10 +37,7 @@ printer_print_usage(void)
     pthread_cleanup_push(cleanup_mutex_unlock, &printer_lock);
 
     if (!shared.new_data_submitted) {
-        // TODO: Make this a timed wait
-        iret = pthread_cond_wait(&cond_on_data_submitted, &printer_lock);
-        assert(iret != EINVAL);
-        assert(iret != EPERM);
+        cond_wait_seconds(&cond_on_data_submitted, &printer_lock, 1);
     }
 
     if (shared.new_data_submitted) {
@@ -48,10 +51,13 @@ printer_print_usage(void)
 static void
 printer_deinit(void *arg)
 {
-    (void)(arg);
-
     int iret = pthread_mutex_lock(&printer_lock);
     assert(iret == 0);
+
+    PrinterPrivateState *priv = arg;
+
+    free(priv->args);
+    free(priv);
 
     free(shared.cpu_names);
     free(shared.cpu_usage);
@@ -62,15 +68,17 @@ printer_deinit(void *arg)
     assert(iret == 0);
 }
 
-static void
+static PrinterPrivateState *
 printer_init(void *arg)
 {
     int iret = pthread_mutex_lock(&printer_lock);
     assert(iret == 0);
 
-    int max_cpu_entries = ((PrinterArgs *)arg)->max_cpu_entries;
+    PrinterPrivateState *priv = ecalloc(1, sizeof(*priv));
 
-    free(arg);
+    priv->args = arg;
+
+    int max_cpu_entries = priv->args->max_cpu_entries;
 
     shared.max_cpu_entries = max_cpu_entries;
     shared.cpu_names = emalloc((size_t)max_cpu_entries * sizeof(shared.cpu_names[0]));
@@ -83,26 +91,32 @@ printer_init(void *arg)
 
     iret = pthread_mutex_unlock(&printer_lock);
     assert(iret == 0);
+
+    return priv;
 }
 
 static void
-printer_loop(void)
+printer_loop(PrinterPrivateState *priv)
 {
     while (1) {
         printer_print_usage();
 
-        // TODO: signal to watchdog
+        if (priv->args->use_watchdog) {
+            watchdog_signal_active("Printer");
+        }
     }
 }
 
 void *
 printer_run(void *arg)
 {
-    printer_init(arg);
+    assert(arg);
 
-    pthread_cleanup_push(printer_deinit, NULL);
+    PrinterPrivateState *priv = printer_init(arg);
 
-    printer_loop();
+    pthread_cleanup_push(printer_deinit, priv);
+
+    printer_loop(priv);
 
     pthread_cleanup_pop(1);
 

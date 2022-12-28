@@ -14,6 +14,7 @@ source_files=(
     "printer.c"
     "thread_utils.c"
     "logger.c"
+    "watchdog.c"
 )
 
 debug=false

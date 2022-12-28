@@ -5,6 +5,10 @@
 #include <stdlib.h>
 #include <stdbool.h>
 
+typedef struct {
+    bool use_watchdog;
+} LoggerArgs;
+
 void * logger_run(void *arg);
 
 /*

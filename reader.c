@@ -13,6 +13,7 @@
 #include "proc_stat_utils.h"
 #include "thread_utils.h"
 #include "logger.h"
+#include "watchdog.h"
 
 typedef struct {
     ReaderArgs *args;
@@ -68,7 +69,9 @@ reader_loop(ReaderPrivateState *priv)
         bool bret = analyzer_submit_data(n_cpu_entries, priv->cpu_entries);
         assert(bret);
 
-        /* TODO: signal to watchdog */
+        if (priv->args->use_watchdog) {
+            watchdog_signal_active("Reader");
+        }
 
         /* Reduce the duration of the first sleep to reduce program startup time */
         if (!priv->first_sleep_done) {
@@ -90,6 +93,8 @@ reader_loop(ReaderPrivateState *priv)
 void *
 reader_run(void *arg)
 {
+    assert(arg);
+
     ReaderPrivateState *priv = reader_init(arg);
 
     pthread_cleanup_push(reader_deinit, priv);

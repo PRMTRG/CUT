@@ -10,6 +10,7 @@
 #include "proc_stat_utils.h"
 #include "printer.h"
 #include "thread_utils.h"
+#include "watchdog.h"
 
 typedef struct {
     AnalyzerArgs *args;
@@ -44,10 +45,7 @@ analyzer_retrieve_submitted_data(AnalyzerPrivateState *priv)
     pthread_cleanup_push(cleanup_mutex_unlock, &analyzer_lock);
 
     if (!shared.new_data_submitted) {
-        // TODO: make this a timed wait
-        iret = pthread_cond_wait(&cond_on_data_submitted, &analyzer_lock);
-        assert(iret != EINVAL);
-        assert(iret != EPERM);
+        cond_wait_seconds(&cond_on_data_submitted, &analyzer_lock, 1);
     }
 
     if (!shared.new_data_submitted) {
@@ -155,13 +153,17 @@ analyzer_loop(AnalyzerPrivateState *priv)
             analyzer_process_data(priv);
         }
 
-        // TODO: signal to watchdog
+        if (priv->args->use_watchdog) {
+            watchdog_signal_active("Analyzer");
+        }
     }
 }
 
 void *
 analyzer_run(void *arg)
 {
+    assert(arg);
+
     AnalyzerPrivateState *priv = analyzer_init(arg);
 
     pthread_cleanup_push(analyzer_deinit, priv);

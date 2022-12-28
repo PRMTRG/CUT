@@ -5,6 +5,7 @@
 
 typedef struct {
     int max_cpu_entries;
+    bool use_watchdog;
 } AnalyzerArgs;
 
 void * analyzer_run(void *arg);

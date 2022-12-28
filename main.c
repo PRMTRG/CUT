@@ -6,6 +6,7 @@
 #include <assert.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <signal.h>
 #include <sys/sysinfo.h> /* get_nprocs_conf() */
 
 #include "utils.h"
@@ -14,6 +15,7 @@
 #include "analyzer.h"
 #include "printer.h"
 #include "logger.h"
+#include "watchdog.h"
 
 int
 main(int argc, char **argv)
@@ -31,6 +33,18 @@ main(int argc, char **argv)
     int nprocs = get_nprocs_conf();
     int max_cpu_entries = nprocs + 1;
 
+    int iret;
+
+    /*
+     * Block signals so that Watchdog can later unblock and handle them.
+     */
+    sigset_t masked_signals;
+    sigemptyset(&masked_signals);
+    sigaddset(&masked_signals, SIGTERM);
+    iret = pthread_sigmask(SIG_BLOCK, &masked_signals, NULL);
+    assert(iret == 0);
+
+    pthread_t watchdog;
     pthread_t reader;
     pthread_t analyzer;
     pthread_t printer;
@@ -38,14 +52,21 @@ main(int argc, char **argv)
 
     ReaderArgs *reader_args = ecalloc(1, sizeof(*reader_args));
     reader_args->max_cpu_entries = max_cpu_entries;
+    reader_args->use_watchdog = true;
 
     AnalyzerArgs *analyzer_args = ecalloc(1, sizeof(*analyzer_args));
     analyzer_args->max_cpu_entries = max_cpu_entries;
+    analyzer_args->use_watchdog = true;
 
     PrinterArgs *printer_args = ecalloc(1, sizeof(*printer_args));
     printer_args->max_cpu_entries = max_cpu_entries;
+    printer_args->use_watchdog = true;
 
-    int iret;
+    LoggerArgs *logger_args = ecalloc(1, sizeof(*logger_args));
+    logger_args->use_watchdog = true;
+
+    iret = pthread_create(&watchdog, NULL, watchdog_run, NULL);
+    assert(iret == 0);
 
     iret = pthread_create(&reader, NULL, reader_run, reader_args);
     assert(iret == 0);
@@ -56,8 +77,15 @@ main(int argc, char **argv)
     iret = pthread_create(&printer, NULL, printer_run, printer_args);
     assert(iret == 0);
 
-    iret = pthread_create(&logger, NULL, logger_run, NULL);
+    iret = pthread_create(&logger, NULL, logger_run, logger_args);
     assert(iret == 0);
+
+    sleep(15);
+    pthread_cancel(reader);
+    pthread_cancel(analyzer);
+    pthread_cancel(printer);
+    pthread_cancel(logger);
+    pthread_cancel(watchdog);
 
     iret = pthread_join(reader, NULL);
     assert(iret == 0);
@@ -69,6 +97,9 @@ main(int argc, char **argv)
     assert(iret == 0);
 
     iret = pthread_join(logger, NULL);
+    assert(iret == 0);
+
+    iret = pthread_join(watchdog, NULL);
     assert(iret == 0);
 
     pthread_exit(NULL);
