@@ -56,7 +56,7 @@ bool calculate_cpu_usage(int n_cpu_entries, ProcStatCpuEntry previous_stats[n_cp
 
 /*
  * Print CPU usage stored in the cpu_usage array.
- * If n is less than 2 the function doesn't do anything.
+ * If n_cpu_entries is less than 2 the function doesn't do anything.
  */
 void print_cpu_usage(int n_cpu_entries, char cpu_names[n_cpu_entries][PROCSTATCPUENTRY_CPU_NAME_SIZE], double cpu_usage[n_cpu_entries]);
 
